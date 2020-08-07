@@ -309,6 +309,7 @@ static void ffmpeg_source_open(struct ffmpeg_source *s)
 			.hardware_decoding = s->is_hw_decoding,
 			.is_local_file = s->is_local_file || s->seekable,
 			.reconnecting = s->reconnecting,
+			
 		};
 
 		s->media_valid = mp_media_init(&s->media, &info);
@@ -323,7 +324,7 @@ static void ffmpeg_source_start(struct ffmpeg_source *s)
 	if (!s->media_valid)
 		return;
 
-	mp_media_play(&s->media, s->is_looping, s->reconnecting);
+	mp_media_call_reset(&s->media, s->is_looping, s->reconnecting);
 	if (s->is_local_file && (s->is_clear_on_media_end || s->is_looping))
 		obs_source_show_preloaded_video(s->source);
 	else
@@ -645,7 +646,7 @@ static void ffmpeg_source_deactivate(void *data)
 
 	if (s->restart_on_activate) {
 		if (s->media_valid) {
-			mp_media_stop(&s->media);
+			mp_media_call_stop(&s->media);
 
 			if (s->is_clear_on_media_end)
 				obs_source_output_video(s->source, NULL);
@@ -663,7 +664,7 @@ static void ffmpeg_source_play_pause(void *data, bool pause)
 	if (!s->media_valid)
 		return;
 
-	mp_media_play_pause(&s->media, pause);
+	mp_media_call_play_pause(&s->media, pause);
 
 	if (pause)
 		set_media_state(s, OBS_MEDIA_STATE_PAUSED);
@@ -676,7 +677,7 @@ static void ffmpeg_source_stop(void *data)
 	struct ffmpeg_source *s = data;
 
 	if (s->media_valid) {
-		mp_media_stop(&s->media);
+		mp_media_call_stop(&s->media);
 		obs_source_output_video(s->source, NULL);
 		set_media_state(s, OBS_MEDIA_STATE_STOPPED);
 	}
@@ -714,7 +715,7 @@ static void ffmpeg_source_set_time(void *data, int64_t ms)
 {
 	struct ffmpeg_source *s = data;
 
-	mp_media_seek_to(&s->media, ms);
+	mp_media_call_seek_to(&s->media, ms);
 }
 
 static enum obs_media_state ffmpeg_source_get_state(void *data)

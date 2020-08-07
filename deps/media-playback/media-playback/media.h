@@ -42,6 +42,16 @@ typedef void (*mp_video_cb)(void *opaque, struct obs_source_frame *frame);
 typedef void (*mp_audio_cb)(void *opaque, struct obs_source_audio *audio);
 typedef void (*mp_stop_cb)(void *opaque);
 
+enum mp_media_state {
+	mstate_playing = 0,
+	mstate_paused = 1,
+	mstate_seeking = 2,
+	mstate_resetting = 3,
+	mstate_stopping = 4,
+	mstate_stopped = 5,
+	mstate_killing = 6
+};
+
 struct mp_media {
 	AVFormatContext *fmt;
 
@@ -87,18 +97,14 @@ struct mp_media {
 
 	pthread_mutex_t mutex;
 	os_sem_t *sem;
-	bool stopping;
+
 	bool looping;
-	bool active;
-	bool reset;
-	bool kill;
+
+	enum mp_media_state mp_state;
 
 	bool thread_valid;
 	pthread_t thread;
 
-	bool pause;
-	bool reset_ts;
-	bool seek;
 	bool seek_next_ts;
 	int64_t seek_pos;
 };
@@ -126,13 +132,12 @@ struct mp_media_info {
 
 extern bool mp_media_init(mp_media_t *media, const struct mp_media_info *info);
 extern void mp_media_free(mp_media_t *media);
+extern void mp_media_call_reset(mp_media_t *media, bool loop, bool reconnecting);
+extern void mp_media_call_stop(mp_media_t *media);
+extern void mp_media_call_play_pause(mp_media_t *media, bool pause);
+extern void mp_media_call_seek_to(mp_media_t *m, int64_t pos);
 
-extern void mp_media_play(mp_media_t *media, bool loop, bool reconnecting);
-extern void mp_media_stop(mp_media_t *media);
-extern void mp_media_play_pause(mp_media_t *media, bool pause);
 extern int64_t mp_get_current_time(mp_media_t *m);
-extern void mp_media_seek_to(mp_media_t *m, int64_t pos);
-
 /* #define DETAILED_DEBUG_INFO */
 
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 48, 101)
